@@ -9,25 +9,26 @@
 from flight_search import FlightSearch
 from data_manager import DataManager
 from flight_data import FlightData
+from notification_manager import NotificationManager
 import json
-
-search = FlightSearch()
-results = search.get_flight_data(destination="NYC")
-with open("flight_search_response.json", "w") as file:
-    json.dump(results, file, indent=2)
-# data = FlightData(search_results=results)
-# pretty_result = json.dumps(results, indent=2)
-# for result in results["data"]:
-#     print(result["price"])
-# print(data.earliest_flight, data.last_flight)
-
-# for row in sheet["prices"]:
-#     id = row["id"]
-#     city = row["city"]
-#     code = search.get_city_code(city)
-#     data_manager.edit_row(row_to_edit=id, new_value=code)
-
-# data_manager.edit_row("2", "PAR")
-
-# search.get_city_code("paris")
-# print(search.header, search.endpoint)
+notifier = NotificationManager()
+spreadsheet = DataManager(sheet_name="prices")
+flight_found = False
+for row in spreadsheet.rows:
+    print("Checking for cheap flights...")
+    results = FlightSearch(destination=row["cityCode"]).results
+    try:
+        data = FlightData(results)
+    except IndexError:
+        print(f"No flights to {row['cityCode']} found!")
+    if data.price <= row["lowestPrice"]:
+        print(f"Cheap flight to {data.city_to} found!")
+        spreadsheet.edit_row(row_to_edit=row["id"], new_value=data.price, column_header="lowestPrice")
+        message = notifier.create_message(data)
+        notifier.send_message(message)
+        flight_found = True
+        with open("flight_search_response.json", "a") as file:
+            json.dump(data.flight, file, indent=2)
+            file.write("next flight")
+if not flight_found:
+    print("No qualifying flights found.")

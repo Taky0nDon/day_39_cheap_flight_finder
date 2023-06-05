@@ -3,11 +3,12 @@ import requests
 import datetime
 # This class is response for talking to the flight search API
 class FlightSearch:
-    def __init__(self):
+    def __init__(self, destination: str):
         self.now = datetime.datetime.now()
         self.date_start = self.now.strftime("%d/%m/%Y")
         self.date_end = self.now.strftime(f"%d/{self.get_future_month()}/%Y")
         self.depart = "RDU"
+        self.destination = destination
         self.endpoint = os.environ.get("FLIGHT_SEARCH_ENDPOINT")
         self.header = {"apikey": f"{os.environ.get('FLIGHT_SEARCH_KEY')}",
                        "accept": "application/json"}
@@ -19,8 +20,10 @@ class FlightSearch:
             "curr": "USD",
             "sort": "price",
             "nights_in_dst_from": 7,
-            "nights_in_dst_to": 28
+            "nights_in_dst_to": 28,
+            "max_stopovers": 0
         }
+        self.results = self.get_flight_data()
 
     def get_city_code(self, term: str) -> str:
         """
@@ -40,9 +43,9 @@ class FlightSearch:
         city_code = response.json()["locations"][0]["code"]
         return city_code
 
-    def get_flight_data(self, destination: str) -> dict:
-        self.parameters["fly_to"] = destination
-        response = requests.get(url=f"{self.endpoint}v2/search", params=self.parameters, headers=self.header)
+    def get_flight_data(self) -> dict:
+        self.parameters["fly_to"] = self.destination
+        response = requests.get(url=f"https://{self.endpoint}", params=self.parameters, headers=self.header)
         return response.json()
 
     def get_future_month(self):
