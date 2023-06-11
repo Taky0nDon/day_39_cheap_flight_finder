@@ -3,7 +3,11 @@ import requests
 import datetime
 # This class is response for talking to the flight search API
 class FlightSearch:
-    def __init__(self, destination: str):
+    def __init__(self, destination: str | None = None):
+        """
+
+        :param destination: default value of None for methods that don't require a destination.
+        """
         self.now = datetime.datetime.now()
         self.date_start = self.now.strftime("%d/%m/%Y")
         self.date_end = self.now.strftime(f"%d/{self.get_future_month()}/%Y")
@@ -31,7 +35,7 @@ class FlightSearch:
         :param term:
         :return:
         """
-        endpoint = f"{self.endpoint}locations/query"
+        endpoint = f"https://{self.endpoint}/locations/query"
         parameters = {
             "term": term,
             "locale": "en-US",
@@ -45,7 +49,7 @@ class FlightSearch:
 
     def get_flight_data(self) -> dict:
         self.parameters["fly_to"] = self.destination
-        response = requests.get(url=f"https://{self.endpoint}", params=self.parameters, headers=self.header)
+        response = requests.get(url=f"https://{self.endpoint}/v2/search", params=self.parameters, headers=self.header)
         return response.json()
 
     def get_future_month(self):
